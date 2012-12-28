@@ -26,44 +26,59 @@ def get_last_nick(str):
 
     if re.search(".+-!-", nick):
         return None
+
     return nick
     
+def get_all_nicks(data):
+    nicks = set()
+    
+    for line in data:
+        if not is_nickname(line):
+            continue
+
+        nick = get_first_nick(line)
+        if nick == None:
+            continue             
+
+        nicks.add(nick)
+            
+    return nicks
+
+def get_nick_pairs(nicks, data):
+    pairs = set()
+
+    for line in data:
+        if not is_nickname(line):
+            continue 
+
+        lnick = get_first_nick(line)
+        if lnick == None or lnick == "":
+            continue             
+
+        rnick = get_last_nick(line)
+        if rnick == None or rnick == "":
+            continue
+
+        if rnick in nicks:
+            lnickstr = "%s -- %s;" % (lnick, rnick) 
+            rnickstr = "%s -- %s;" % (rnick, lnick) 
+
+            if rnickstr in nicks:
+                continue
+                
+            pairs.add(lnickstr)
+                
+    return pairs
+
 def build_nick_set(data):
     nicks = set()
     tmpnicks = set()
+    pairs = set()
 
-    for line in data:
-        if is_nickname(line):
-            nick = get_first_nick(line)
-            if nick == None:
-                continue             
+    nicks = get_all_nicks(data)
+    pairs = get_nick_pairs(nicks, data)
 
-            nicks.add(nick)
-
-    for line in data:
-        if is_nickname(line):
-            lnick = get_first_nick(line)
-            if lnick == None or lnick == "":
-                continue             
-
-            rnick = get_last_nick(line)
-            if rnick == None or rnick == "":
-                continue
-
-            if rnick in nicks:
-                lnickstr = "%s -- %s;" % (lnick, rnick) 
-                rnickstr = "%s -- %s;" % (rnick, lnick) 
-
-                if rnickstr in nicks:
-                    continue
-                
-                nicks.add(lnickstr)
-
-    for item in nicks:
-        if is_nick_pair(item) == True:
-            tmpnicks.add(item)
-
-    return tmpnicks
+    return pairs
                 
 def parse_log(filename):
     with open(filename) as file:
@@ -80,7 +95,7 @@ def write_file(filename, data):
 if __name__ == '__main__':
     graph_start = 'graph graphname {\n '
     graph_data = ""
-    graph_end = '}\n'
+    graph_end = '\n}\n'
     graph_data = parse_log("dalo.log")
     graph = graph_start + graph_data + graph_end
 
